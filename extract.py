@@ -57,6 +57,8 @@ def get_open_positions() -> pd.DataFrame:
         # Create DataFrame and add timestamp
         df = pd.DataFrame(output_list)
         df["extract_timestamp"] = pd.Timestamp.now("UTC")
+        df["extract_timestamp"] = df["extract_timestamp"].apply(lambda x: x.isoformat() if hasattr(x, "isoformat") else x)
+        df = df.where(pd.notna(df), 0)  # eventualy I will need to replace NaN values ideally with null values
     
     except Exception as e:
         raise ValueError(f"Error at index {idx}: {e}") from e
