@@ -1,10 +1,13 @@
 from extract import get_open_positions
+from load import load_to_db
+
 from prefect import flow
 
 @flow(name="etl-pipeline")
 def etl_pipeline():
-    extract = get_open_positions()
-    return extract
+    df_extract = get_open_positions()
+    transform = load_to_db(df_extract)
 
-result = etl_pipeline()
-print(result)
+
+if __name__ == "__main__":
+    etl_pipeline()
