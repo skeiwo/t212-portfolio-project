@@ -1,4 +1,5 @@
 from dotenv import load_dotenv
+from prefect import task
 from supabase import create_client, Client
 import os
 import pandas as pd
