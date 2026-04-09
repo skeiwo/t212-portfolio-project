@@ -1,11 +1,10 @@
-from tasks import get_numbers, transform_numbers, load_numbers
+from extract import get_open_positions
 from prefect import flow
 
 @flow(name="etl-pipeline")
 def etl_pipeline():
-    extract = get_numbers()
-    transform = transform_numbers(extract)
-    load = load_numbers(transform)
-    print(load)
+    extract = get_open_positions()
+    return extract
 
-etl_pipeline()
+result = etl_pipeline()
+print(result)
