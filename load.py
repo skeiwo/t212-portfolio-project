@@ -9,6 +9,7 @@ SUPABASE_API_KEY = os.getenv("SUPABASE_API_KEY")
 SUPABASE_URL = os.getenv("SUPABASE_URL")
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_API_KEY)
 
+@task
 def load_to_db(df: pd.DataFrame) -> None:
     data = df.to_dict(orient = "records")
     try:
