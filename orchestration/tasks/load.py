@@ -11,10 +11,9 @@ SUPABASE_URL = os.getenv("SUPABASE_URL")
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_API_KEY)
 
 @task
-def load_to_db(df: pd.DataFrame) -> None:
-    data = df.to_dict(orient = "records")
+def load_to_db(dict_to_upload: dict) -> None:
     try:
-        response = supabase.schema("t212").table("L0_active_positions").insert(data).execute()
+        response = supabase.schema("t212").table("L0_active_positions").insert(dict_to_upload).execute()
         print("Data loaded succesfully")
     except Exception as e:
         raise Exception(f"Error: {str(e)}")

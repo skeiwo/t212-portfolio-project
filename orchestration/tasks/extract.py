@@ -1,7 +1,9 @@
 import base64
+import numpy as np
 import os
 import pandas as pd
 import requests
+import time
 
 from dotenv import load_dotenv
 from prefect import task
@@ -17,7 +19,7 @@ HEADERS = {"Authorization": f"Basic {ENCODED_CREDENTIALS}"}
 BASE_URL = os.getenv("T212_BASE_URL")
 
 @task
-def get_open_positions() -> pd.DataFrame:
+def get_open_positions() -> dict:
     url = f"{BASE_URL}/api/v0/equity/positions"
     
     try:
@@ -58,9 +60,9 @@ def get_open_positions() -> pd.DataFrame:
         df = pd.DataFrame(output_list)
         df["extract_timestamp"] = pd.Timestamp.now("UTC")
         df["extract_timestamp"] = df["extract_timestamp"].apply(lambda x: x.isoformat() if hasattr(x, "isoformat") else x)
-        df = df.where(pd.notna(df), 0)  # eventualy I will need to replace NaN values ideally with null values
+        dict_to_upload = df.replace({np.nan: None}).where(pd.notnull(df), None).to_dict(orient="records")
     
     except Exception as e:
         raise ValueError(f"Error at index {idx}: {e}") from e
     
-    return df
+    return dict_to_upload
