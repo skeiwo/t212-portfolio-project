@@ -58,11 +58,10 @@ def get_open_positions() -> dict:
         
         # Create DataFrame and add timestamp
         df = pd.DataFrame(output_list)
-        df["extract_timestamp"] = pd.Timestamp.now("UTC")
-        df["extract_timestamp"] = df["extract_timestamp"].apply(lambda x: x.isoformat() if hasattr(x, "isoformat") else x)
-        dict_to_upload = df.replace({np.nan: None}).where(pd.notnull(df), None).to_dict(orient="records")
+        df["extractTimestamp"] = pd.Timestamp.now("UTC")
+        df["extractTimestamp"] = df["extractTimestamp"].apply(lambda x: x.isoformat() if hasattr(x, "isoformat") else x)
     
     except Exception as e:
         raise ValueError(f"Error at index {idx}: {e}") from e
     
-    return dict_to_upload
+    return df
