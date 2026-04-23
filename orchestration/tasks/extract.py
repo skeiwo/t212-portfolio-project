@@ -1,12 +1,15 @@
 import base64
-import numpy as np
+import json
+import logging
 import os
-import pandas as pd
 import requests
 import time
 
+from datetime import datetime, timezone
 from dotenv import load_dotenv
 from prefect import task
+from prefect.exceptions import MissingContextError
+from prefect.logging import get_run_logger
 
 load_dotenv()
 
@@ -18,50 +21,85 @@ ENCODED_CREDENTIALS = base64.b64encode(T212_CREDENTIALS.encode("utf-8")).decode(
 HEADERS = {"Authorization": f"Basic {ENCODED_CREDENTIALS}"}
 BASE_URL = os.getenv("T212_BASE_URL")
 
-@task
-def get_open_positions() -> dict:
+
+@task()
+def get_open_positions() -> list[dict]:
+    try:
+        logger = get_run_logger()
+    except MissingContextError:
+        logger = logging.getLogger(__name__)
+    logger.info("Starting open positions extract")
+
     url = f"{BASE_URL}/api/v0/equity/positions"
-    
-    try:
-        response = requests.get(url, headers=HEADERS, timeout=10)
+    extract_timestamp = datetime.now(timezone.utc).isoformat()
+
+
+    while True:
+        response = requests.get(url, headers=HEADERS, timeout=30)
+
+        if response.status_code == 429:
+            wait = float(response.headers.get("Retry-After", 10))
+            logger.warning("Rate limited, sleeping %.1fs", wait)
+            time.sleep(wait)
+            continue
+
         response.raise_for_status()
-        
-    except (requests.Timeout, requests.ConnectionError) as e:       # These exceptions are not caught by response.raise_for_status()
-        raise requests.RequestException(f"Request failed while fetching positions from {url}") from e
-    
+        break
+
+    rows = []
+    for position in response.json():
+        ticker = position.get("ticker")
+        rows.append({
+            "extract_timestamp": extract_timestamp,
+            "record_id": str(ticker) if ticker is not None else None,
+            "payload": json.dumps(position),
+        })
+
+    logger.info("Extract complete: %d positions", len(rows))
+    return rows
+
+
+@task
+def get_orders_history() -> list[dict]:
     try:
-        positions_data = response.json()
-        output_list = []
-        for idx, position in enumerate(positions_data):
-            instrument = position.get("instrument")
-            wallet_impact = position.get("walletImpact")
-            
-            if not instrument or not wallet_impact:
-                raise ValueError(f"Missing required fields in position {idx}")
-            
-            output_list.append({
-                "ticker": instrument.get("ticker"),
-                "name": instrument.get("name"),
-                "isin": instrument.get("isin"),
-                "createdAt": position.get("createdAt"),
-                "quantity": position.get("quantity"),
-                "quantityAvailableForTrading": position.get("quantityAvailableForTrading"),
-                "quantityInPies": position.get("quantityInPies"),
-                "currentPrice": position.get("currentPrice"),
-                "averagePricePaid": position.get("averagePricePaid"),
-                "currency": wallet_impact.get("currency"),
-                "totalCost": wallet_impact.get("totalCost"),
-                "currentValue": wallet_impact.get("currentValue"),
-                "unrealizedProfitLoss": wallet_impact.get("unrealizedProfitLoss"),
-                "fxImpact": wallet_impact.get("fxImpact"),
+        logger = get_run_logger()
+    except MissingContextError:
+        logger = logging.getLogger(__name__)
+    logger.info("Starting orders history extract")
+    
+
+    url = f"{BASE_URL}/api/v0/equity/history/orders"
+    params = {"limit": 50}
+    rows = []
+    extract_timestamp = datetime.now(timezone.utc).isoformat()
+
+    while url:
+        response = requests.get(url, headers=HEADERS, params=params)
+
+        if response.status_code == 429:
+            time.sleep(float(response.headers.get("Retry-After", 10)))
+            continue
+
+        response.raise_for_status()
+        data = response.json()
+
+        for item in data.get("items", []):
+            order_id = item.get("order", {}).get("id")
+            created_at = item.get("order", {}).get("createdAt")
+            rows.append({
+                "extract_timestamp": extract_timestamp,
+                "record_id": str(order_id) if order_id is not None else None,
+                "record_created_at": created_at,
+                "payload": json.dumps(item),
             })
-        
-        # Create DataFrame and add timestamp
-        df = pd.DataFrame(output_list)
-        df["extractTimestamp"] = pd.Timestamp.now("UTC")
-        df["extractTimestamp"] = df["extractTimestamp"].apply(lambda x: x.isoformat() if hasattr(x, "isoformat") else x)
-    
-    except Exception as e:
-        raise ValueError(f"Error at index {idx}: {e}") from e
-    
-    return df
+
+        next_page = data.get("nextPagePath")
+        if next_page:
+            url = next_page if next_page.startswith("http") else f"{BASE_URL}{next_page}"
+            params = None
+        else:
+            url = None
+
+    logger.info("Extracted %d orders", len(rows))
+    return rows
+
