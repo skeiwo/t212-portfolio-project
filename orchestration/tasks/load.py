@@ -11,12 +11,13 @@ import pandas as pd
 
 load_dotenv()
 
-BIGQUERY_CREDENTIALS = service_account.Credentials.from_service_account_file(os.getenv("GCP_CREDENTIALS"))
-BIGQUERY_CLIENT = bigquery.Client(credentials = BIGQUERY_CREDENTIALS, project = os.getenv("GCP_PROJECT"))
 
 
 @task(retries=1, retry_delay_seconds=30)
 def load_to_db(rows: list[dict], table_name: str) -> None:
+    BIGQUERY_CREDENTIALS = service_account.Credentials.from_service_account_file(os.getenv("GCP_CREDENTIALS"))
+    BIGQUERY_CLIENT = bigquery.Client(credentials = BIGQUERY_CREDENTIALS, project = os.getenv("GCP_PROJECT"))
+    
     try:
         logger = get_run_logger()
     except MissingContextError:
