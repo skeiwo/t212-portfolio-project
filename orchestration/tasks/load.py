@@ -29,7 +29,7 @@ def load_to_db(rows: list[dict], table_name: str) -> None:
 
     table_id = f"{os.getenv('GCP_PROJECT')}.{os.getenv('GCP_SCHEMA')}.{table_name}"
 
-    job_config = bigquery.LoadJobConfig(write_disposition=bigquery.WriteDisposition.WRITE_APPEND)
+    job_config = bigquery.LoadJobConfig(write_disposition=bigquery.WriteDisposition.WRITE_TRUNCATE)
 
     logger.info("Loading %d rows to %s", len(rows), table_id)
     job = BIGQUERY_CLIENT.load_table_from_json(rows, table_id, job_config=job_config)

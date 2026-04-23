@@ -24,6 +24,9 @@ BASE_URL = os.getenv("T212_BASE_URL")
 
 @task()
 def get_open_positions() -> list[dict]:
+    rows = []
+    extract_timestamp = datetime.now(timezone.utc).isoformat()
+
     try:
         logger = get_run_logger()
     except MissingContextError:
@@ -31,24 +34,14 @@ def get_open_positions() -> list[dict]:
     logger.info("Starting open positions extract")
 
     url = f"{BASE_URL}/api/v0/equity/positions"
-    extract_timestamp = datetime.now(timezone.utc).isoformat()
-
 
     while True:
         response = requests.get(url, headers=HEADERS, timeout=30)
-
-        if response.status_code == 429:
-            wait = float(response.headers.get("Retry-After", 10))
-            logger.warning("Rate limited, sleeping %.1fs", wait)
-            time.sleep(wait)
-            continue
-
         response.raise_for_status()
         break
 
-    rows = []
     for position in response.json():
-        ticker = position.get("ticker")
+        ticker = position.get("instrument").get("ticker")
         rows.append({
             "extract_timestamp": extract_timestamp,
             "record_id": str(ticker) if ticker is not None else None,
@@ -61,23 +54,24 @@ def get_open_positions() -> list[dict]:
 
 @task
 def get_orders_history() -> list[dict]:
+    rows = []
+    extract_timestamp = datetime.now(timezone.utc).isoformat()
+
     try:
         logger = get_run_logger()
     except MissingContextError:
         logger = logging.getLogger(__name__)
     logger.info("Starting orders history extract")
     
-
     url = f"{BASE_URL}/api/v0/equity/history/orders"
     params = {"limit": 50}
-    rows = []
-    extract_timestamp = datetime.now(timezone.utc).isoformat()
 
     while url:
         response = requests.get(url, headers=HEADERS, params=params)
 
         if response.status_code == 429:
-            time.sleep(float(response.headers.get("Retry-After", 10)))
+            time.sleep(10)
+            logger.warning("Rate limited, waiting 10 seconds")
             continue
 
         response.raise_for_status()
