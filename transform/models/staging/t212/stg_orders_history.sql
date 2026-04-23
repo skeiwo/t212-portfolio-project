@@ -33,7 +33,7 @@ select
     cast(json_value(payload, '$.fill.walletImpact.netValue') as float64) net_value,
     cast(json_value(payload, '$.fill.walletImpact.fxRate') as float64) fx_rate,
     cast(json_value(payload, '$.fill.walletImpact.taxes') as float64) taxes
-from `t212.raw_orders_history`
+from source
 )
 
 SELECT * from flattened
