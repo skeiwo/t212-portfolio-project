@@ -1,0 +1,25 @@
+version: 2
+
+sources:
+  - name: t212
+    database: t212-project
+    schema: t212
+    tables:
+      - name: raw_orders_history
+      - name: raw_open_positions
+
+models:
+  - name: stg_orders_history
+    columns:
+      - name: order_id
+        tests:
+          - not_null
+
+  - name: stg_open_positions
+    columns:
+      - name: ticker
+        tests:
+          - not_null
+      - name: extract_timestamp
+        tests:
+          - not_null
