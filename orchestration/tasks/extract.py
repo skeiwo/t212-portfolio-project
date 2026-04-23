@@ -34,11 +34,8 @@ def get_open_positions() -> list[dict]:
     logger.info("Starting open positions extract")
 
     url = f"{BASE_URL}/api/v0/equity/positions"
-
-    while True:
-        response = requests.get(url, headers=HEADERS, timeout=30)
-        response.raise_for_status()
-        break
+    response = requests.get(url, headers=HEADERS, timeout=30)
+    response.raise_for_status()
 
     for position in response.json():
         ticker = position.get("instrument").get("ticker")
