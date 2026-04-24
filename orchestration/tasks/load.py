@@ -14,7 +14,7 @@ load_dotenv()
 
 
 @task(retries=1, retry_delay_seconds=30)
-def load_to_db(rows: list[dict], table_name: str) -> None:
+def load_to_db(rows: list[dict], schema: str, table_name: str) -> None:
     BIGQUERY_CREDENTIALS = service_account.Credentials.from_service_account_file(os.getenv("GCP_CREDENTIALS"))
     BIGQUERY_CLIENT = bigquery.Client(credentials = BIGQUERY_CREDENTIALS, project = os.getenv("GCP_PROJECT"))
     
@@ -28,7 +28,7 @@ def load_to_db(rows: list[dict], table_name: str) -> None:
         logger.info("No rows to load, skipping")
         return
 
-    table_id = f"{os.getenv('GCP_PROJECT')}.{os.getenv('GCP_SCHEMA')}.{table_name}"
+    table_id = f"{os.getenv('GCP_PROJECT')}.{schema}.{table_name}"
 
     job_config = bigquery.LoadJobConfig(write_disposition=bigquery.WriteDisposition.WRITE_TRUNCATE)
 

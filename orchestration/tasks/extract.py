@@ -94,3 +94,4 @@ def get_orders_history() -> list[dict]:
     logger.info("Extracted %d orders", len(rows))
     return rows
 
+
