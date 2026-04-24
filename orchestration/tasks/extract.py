@@ -1,15 +1,13 @@
 import base64
 import json
-import logging
 import os
 import requests
 import time
 
+from orchestration.utils import _get_logger
 from datetime import datetime, timezone
 from dotenv import load_dotenv
 from prefect import task
-from prefect.exceptions import MissingContextError
-from prefect.logging import get_run_logger
 
 load_dotenv()
 
@@ -27,10 +25,7 @@ def get_open_positions() -> list[dict]:
     rows = []
     extract_timestamp = datetime.now(timezone.utc).isoformat()
 
-    try:
-        logger = get_run_logger()
-    except MissingContextError:
-        logger = logging.getLogger(__name__)
+    logger = _get_logger()
     logger.info("Starting open positions extract")
 
     url = f"{BASE_URL}/api/v0/equity/positions"
@@ -54,10 +49,7 @@ def get_orders_history() -> list[dict]:
     rows = []
     extract_timestamp = datetime.now(timezone.utc).isoformat()
 
-    try:
-        logger = get_run_logger()
-    except MissingContextError:
-        logger = logging.getLogger(__name__)
+    logger = _get_logger()
     logger.info("Starting orders history extract")
     
     url = f"{BASE_URL}/api/v0/equity/history/orders"
@@ -93,5 +85,3 @@ def get_orders_history() -> list[dict]:
 
     logger.info("Extracted %d orders", len(rows))
     return rows
-
-
