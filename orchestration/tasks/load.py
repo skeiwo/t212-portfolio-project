@@ -1,13 +1,10 @@
 from dotenv import load_dotenv
 from prefect import task
-from prefect.exceptions import MissingContextError
-from prefect.logging import get_run_logger
-import logging
 from google.cloud import bigquery
 from google.oauth2 import service_account
+from orchestration.utils import _get_logger
 
 import os
-import pandas as pd
 
 load_dotenv()
 
@@ -18,10 +15,7 @@ def load_to_db(rows: list[dict], schema: str, table_name: str) -> None:
     BIGQUERY_CREDENTIALS = service_account.Credentials.from_service_account_file(os.getenv("GCP_CREDENTIALS"))
     BIGQUERY_CLIENT = bigquery.Client(credentials = BIGQUERY_CREDENTIALS, project = os.getenv("GCP_PROJECT"))
     
-    try:
-        logger = get_run_logger()
-    except MissingContextError:
-        logger = logging.getLogger(__name__)
+    logger = _get_logger()
     logger.info("Starting load_to_db ingestion")
 
     if not rows:
