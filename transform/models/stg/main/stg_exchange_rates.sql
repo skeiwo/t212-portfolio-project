@@ -5,19 +5,10 @@ with source as (
 ),
 
 unnested as (
-    select
-        record_id,
-        base,
-        extract_timestamp,
-        currency,
-        rate
-    from source,
-    unnest([
-        struct('USD' as currency, payload.USD as rate),
-        struct('GBP' as currency, payload.GBP as rate),
-        struct('CZK' as currency, payload.CZK as rate),
-        struct('CHF' as currency, payload.CHF as rate)
-    ])
+select base, record_id, extract_timestamp, 'CHF' as currency, cast(json_value(payload, '$.CHF') as FLOAT64) as rate from source union all
+select base, record_id, extract_timestamp, 'CZK', cast(json_value(payload, '$.CZK') as FLOAT64) from source union all
+select base, record_id, extract_timestamp, 'GBP', cast(json_value(payload, '$.GBP') as FLOAT64) from source union all
+select base, record_id, extract_timestamp, 'USD', cast(json_value(payload, '$.USD') as FLOAT64) from source
 ),
 
 final as (
@@ -26,7 +17,7 @@ final as (
         record_id as date,
         currency,
         base,
-        cast(rate as float64) as rate,
+        rate,
         extract_timestamp
     from unnested
 )

@@ -18,7 +18,13 @@ def etl_pipeline_flow():
 
     # --- Transformation ---
     DbtCoreOperation(
-        commands=["dbt seed", "dbt run --select staging", "dbt test --select staging"],
+        commands=[
+            "dbt seed",
+            "dbt run --select stg",
+            "dbt test --select stg",
+            "dbt run --select int",
+            "dbt test --select int",
+        ],
         project_dir="transform/",
         profiles_dir="transform/"
     ).run()
