@@ -1,7 +1,7 @@
 {{ config(materialized='view') }}
 
 with source as (
-    select * from {{ source('t212', 'raw_open_positions') }}
+    select * from {{ source('t212_raw', 'raw_open_positions') }}
 )
 
 ,final as (

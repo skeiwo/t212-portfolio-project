@@ -1,0 +1,16 @@
+version: 2
+
+sources:
+  - name: t212_seeds
+    database: t212-project
+    schema: t212_seeds
+    tables:
+      - name: raw_tickers
+
+models:
+  - name: stg_tickers
+    columns:
+      - name: t212_ticker
+        tests:
+          - not_null
+          - unique

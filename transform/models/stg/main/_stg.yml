@@ -1,13 +1,12 @@
 version: 2
 
 sources:
-  - name: t212
+  - name: t212_raw
     database: t212-project
-    schema: t212
+    schema: t212_raw
     tables:
       - name: raw_orders_history
       - name: raw_open_positions
-      - name: raw_t212_tickers
       - name: raw_exchange_rates
 
 models:
@@ -25,10 +24,3 @@ models:
       - name: extract_timestamp
         tests:
           - not_null
-
-  - name: stg_t212_tickers
-    columns:
-      - name: t212_ticker
-        tests:
-          - not_null
-          - unique

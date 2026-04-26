@@ -1,7 +1,7 @@
 {{ config(materialized='view') }}
 
 with source as (
-    select * from {{ source('t212', 'raw_orders_history') }}
+    select * from {{ source('t212_raw', 'raw_orders_history') }}
 )
 
 ,flattened as (

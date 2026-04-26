@@ -1,7 +1,7 @@
 {{ config(materialized='view') }}
 
 with source as (
-    select * from {{ source('t212', 'raw_exchange_rates') }}
+    select * from {{ source('t212_raw', 'raw_exchange_rates') }}
 ),
 
 unnested as (
