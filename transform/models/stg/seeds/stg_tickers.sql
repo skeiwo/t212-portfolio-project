@@ -9,7 +9,7 @@ select
   ticker,
   t212_ticker,
   isin,
-  INITCAP(company_name) company_name,
+  company_name,
   currency,
   market,
 from source
