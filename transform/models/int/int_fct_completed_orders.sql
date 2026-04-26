@@ -1,11 +1,11 @@
 {{ config(materialized='table') }}
 
 with source_orders_history as (
-    select * from {{ source('t212_stg', 'stg_orders_history')}}
+    select * from {{ ref('stg_orders_history') }}
 
 )
 ,source_tickers as (
-    select * from {{source('t212_stg', 'stg_tickers')}}
+    select * from {{ ref('stg_tickers') }}
 )
 
 ,final as (

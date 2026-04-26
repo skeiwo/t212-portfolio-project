@@ -1,11 +1,11 @@
 {{ config(materialized='table') }}
 
 with source_open_positions as (
-    select * from {{ source('t212_stg', 'stg_open_positions')}}
+    select * from {{ ref('stg_open_positions') }}
 
 )
 ,source_tickers as (
-    select * from {{source('t212_stg', 'stg_tickers')}}
+    select * from {{ ref('stg_tickers') }}
 )
 
 ,final as (
