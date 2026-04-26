@@ -15,7 +15,7 @@ select
     cast(json_value(payload, '$.createdAt') as timestamp) position_created_at,
 
     cast(json_value(payload, '$.quantity') as float64) quantity,
-    cast(json_value(payload, '$.quantityAvailableForTrading') as float64) quantity_available_for_trading,
+    cast(json_value(payload, '$.quantityAvailableForTrading') as float64) quantity_available,
     cast(json_value(payload, '$.quantityInPies') as float64) quantity_in_pies,
 
     cast(json_value(payload, '$.currentPrice') as float64) current_price,
