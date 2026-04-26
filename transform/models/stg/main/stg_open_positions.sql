@@ -9,7 +9,6 @@ select
     extract_timestamp,
     record_id ticker,
 
-    nullif(json_value(payload, '$.instrument.ticker'), '') instrument_ticker,
     nullif(json_value(payload, '$.instrument.name'), '') instrument_name,
     nullif(json_value(payload, '$.instrument.isin'), '') isin,
     nullif(json_value(payload, '$.instrument.currency'), '') instrument_currency,
