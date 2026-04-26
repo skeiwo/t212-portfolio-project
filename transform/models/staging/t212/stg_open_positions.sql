@@ -4,7 +4,7 @@ with source as (
     select * from {{ source('t212', 'raw_open_positions') }}
 )
 
-,flattened as (
+,final as (
 select
     extract_timestamp,
     record_id ticker,
@@ -30,4 +30,4 @@ select
 from source
 )
 
-SELECT * from flattened
+SELECT * from final

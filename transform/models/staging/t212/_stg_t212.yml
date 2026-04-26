@@ -7,6 +7,7 @@ sources:
     tables:
       - name: raw_orders_history
       - name: raw_open_positions
+      - name: raw_t212_tickers
 
 models:
   - name: stg_orders_history
@@ -23,3 +24,10 @@ models:
       - name: extract_timestamp
         tests:
           - not_null
+
+  - name: stg_t212_tickers
+    columns:
+      - name: t212_ticker
+        tests:
+          - not_null
+          - unique
