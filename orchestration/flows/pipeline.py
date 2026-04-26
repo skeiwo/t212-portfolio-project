@@ -8,13 +8,13 @@ from prefect_dbt.cli import DbtCoreOperation
 def etl_pipeline_flow():
     # --- Ingestion ---
     positions = get_open_positions()
-    load_to_db(positions, schema = "t212", table_name =  "raw_open_positions")
+    load_to_db(positions, schema = "t212_raw", table_name =  "raw_open_positions")
 
     orders = get_orders_history()
-    load_to_db(orders, schema =  "t212", table_name = "raw_orders_history")
+    load_to_db(orders, schema =  "t212_raw", table_name = "raw_orders_history")
 
     ex_rates = get_exchange_rates()
-    load_to_db(ex_rates, schema = "t212", table_name = "raw_exchange_rates")
+    load_to_db(ex_rates, schema = "t212_raw", table_name = "raw_exchange_rates")
 
     # --- Transformation ---
     DbtCoreOperation(
