@@ -14,6 +14,7 @@ SELECT
   (select ticker from source_tickers t where oh.ticker = t.t212_ticker) ticker,
   created_at,
   filled_at,
+  side,
   currency,
   order_value,
   filled_quantity,
