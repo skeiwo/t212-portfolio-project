@@ -11,5 +11,6 @@ transform/logs*
 transform/.user*
 transform/profiles.yml
 transform/target*
+transform/dbt_packages
 
 *.json

@@ -8,6 +8,7 @@ sources:
       - name: raw_orders_history
       - name: raw_open_positions
       - name: raw_t212_tickers
+      - name: raw_exchange_rates
 
 models:
   - name: stg_orders_history
