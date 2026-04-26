@@ -22,7 +22,7 @@ def load_to_db(rows: list[dict], schema: str, table_name: str) -> None:
         logger.info("No rows to load, skipping")
         return
 
-    table_id = f"{os.getenv('GCP_PROJECT')}.{schema}.{table_name}"
+    table_id = f"{os.getenv("GCP_PROJECT")}.{schema}.{table_name}"
 
     job_config = bigquery.LoadJobConfig(write_disposition=bigquery.WriteDisposition.WRITE_TRUNCATE)
 

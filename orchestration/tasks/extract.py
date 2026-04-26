@@ -19,11 +19,12 @@ ENCODED_CREDENTIALS = base64.b64encode(T212_CREDENTIALS.encode("utf-8")).decode(
 HEADERS = {"Authorization": f"Basic {ENCODED_CREDENTIALS}"}
 BASE_URL = os.getenv("T212_BASE_URL")
 
+EXTRACT_TIMESTAMP = datetime.now(timezone.utc).isoformat()
+
 
 @task()
 def get_open_positions() -> list[dict]:
     rows = []
-    extract_timestamp = datetime.now(timezone.utc).isoformat()
 
     logger = _get_logger()
     logger.info("Starting open positions extract")
@@ -32,10 +33,12 @@ def get_open_positions() -> list[dict]:
     response = requests.get(url, headers=HEADERS, timeout=30)
     response.raise_for_status()
 
-    for position in response.json():
+
+    data = response.json()
+    for position in data:
         ticker = position.get("instrument").get("ticker")
         rows.append({
-            "extract_timestamp": extract_timestamp,
+            "extract_timestamp": EXTRACT_TIMESTAMP,
             "record_id": str(ticker) if ticker is not None else None,
             "payload": json.dumps(position),
         })
@@ -47,7 +50,6 @@ def get_open_positions() -> list[dict]:
 @task
 def get_orders_history() -> list[dict]:
     rows = []
-    extract_timestamp = datetime.now(timezone.utc).isoformat()
 
     logger = _get_logger()
     logger.info("Starting orders history extract")
@@ -70,7 +72,7 @@ def get_orders_history() -> list[dict]:
             order_id = item.get("order", {}).get("id")
             created_at = item.get("order", {}).get("createdAt")
             rows.append({
-                "extract_timestamp": extract_timestamp,
+                "extract_timestamp": EXTRACT_TIMESTAMP,
                 "record_id": str(order_id) if order_id is not None else None,
                 "record_created_at": created_at,
                 "payload": json.dumps(item),
@@ -84,4 +86,26 @@ def get_orders_history() -> list[dict]:
             url = None
 
     logger.info("Extracted %d orders", len(rows))
+    return rows
+
+@task
+def get_exchange_rates() -> list[dict]:
+    rows = []
+
+    logger = _get_logger()
+    logger.info("Starting exchange rates extract")
+
+    url = "https://api.frankfurter.app/latest?from=EUR&to=CZK,USD,GBP,CHF"
+    response = requests.get(url)
+    response.raise_for_status()
+
+    data = response.json()
+    rows.append({
+        "extract_timestamp": EXTRACT_TIMESTAMP,
+        "base": data.get("base"),
+        "record_id": data.get("date"),
+        "payload": data.get("rates")
+    })
+    
+    logger.info("Extracted %d exchange_rates", len(rows))
     return rows
