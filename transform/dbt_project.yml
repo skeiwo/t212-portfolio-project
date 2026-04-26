@@ -43,3 +43,7 @@ models:
       seeds:
         +schema: stg
         +materialized: view
+
+    int:
+      +schema: int
+      +materialized: table
