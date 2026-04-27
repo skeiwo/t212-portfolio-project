@@ -6,11 +6,19 @@ sources:
     schema: t212_seeds
     tables:
       - name: raw_tickers
+      - name: raw_stock_splits
 
 models:
   - name: stg_tickers
     columns:
       - name: t212_ticker
+        tests:
+          - not_null
+          - unique
+
+  - name: stg_stock_splits
+    columns:
+      - name: ticker
         tests:
           - not_null
           - unique
