@@ -1,4 +1,4 @@
-from orchestration.tasks.extract import get_open_positions, get_orders_history, get_exchange_rates
+from orchestration.tasks.extract import get_open_positions, get_orders_history, get_exchange_rates, get_dividends
 from orchestration.tasks.load import load_to_db
 
 from prefect import flow
@@ -12,6 +12,9 @@ def etl_pipeline_flow():
 
     orders = get_orders_history()
     load_to_db(orders, schema =  "t212_raw", table_name = "raw_orders_history")
+
+    dividends = get_dividends()
+    load_to_db(dividends, schema = "t212_raw", table_name = "raw_dividends")
 
     ex_rates = get_exchange_rates()
     load_to_db(ex_rates, schema = "t212_raw", table_name = "raw_exchange_rates")

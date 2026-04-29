@@ -20,7 +20,7 @@ HEADERS = {"Authorization": f"Basic {ENCODED_CREDENTIALS}"}
 BASE_URL = os.getenv("T212_BASE_URL")
 
 
-@task()
+@task
 def get_open_positions() -> list[dict]:
     rows = []
     extract_timestamp = datetime.now(timezone.utc).isoformat()
@@ -61,8 +61,9 @@ def get_orders_history() -> list[dict]:
         response = requests.get(url, headers=HEADERS, params=params)
 
         if response.status_code == 429:
-            time.sleep(10)
-            logger.warning("Rate limited, waiting 10 seconds")
+            time_to_wait = int(response.headers.get("retry-after"))
+            logger.warning(f"Rate limited, waiting {time_to_wait} seconds")
+            time.sleep(time_to_wait)
             continue
 
         response.raise_for_status()
@@ -120,4 +121,48 @@ def get_exchange_rates() -> list[dict]:
     })
 
     logger.info("Extracted %d exchange_rates", len(rows))
+    return rows
+
+@task
+def get_dividends():
+    rows = []
+    extract_timestamp = datetime.now(timezone.utc).isoformat()
+    
+    logger = _get_logger()
+    logger.info("Starting dividends history extract")
+    
+    url = f"{BASE_URL}/api/v0/equity/history/dividends"
+    params = {"limit": 50}
+    
+    while url:
+        response = requests.get(url, headers=HEADERS, timeout=30, params=params)
+        
+        if response.status_code == 429:
+            time_to_wait = int(response.headers.get("retry-after"))
+            logger.warning(f"Rate limited, waiting {time_to_wait} seconds")
+            time.sleep(time_to_wait)
+            continue
+
+        response.raise_for_status()
+        data = response.json()
+    
+
+        for item in data.get("items", []):
+            reference_id = item.get("reference", {})
+            created_at = item.get("paidOn", {})
+            rows.append({
+                "extract_timestamp": extract_timestamp,
+                "record_id": reference_id,
+                "record_created_at": created_at,
+                "payload": json.dumps(item),
+            })
+
+        next_page = data.get("nextPagePath")
+        if next_page:
+            url = next_page if next_page.startswith("http") else f"{BASE_URL}{next_page}"
+            params = None
+        else:
+            url = None
+    
+    logger.info("Extracted %d dividends", len(rows))
     return rows
