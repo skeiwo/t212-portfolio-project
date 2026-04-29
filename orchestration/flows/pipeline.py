@@ -7,19 +7,16 @@ from prefect_dbt.cli import DbtCoreOperation
 @flow(name="etl-pipeline")
 def etl_pipeline_flow():
     # --- Ingestion ---
-    positions = get_open_positions()
+    positions = get_open_positions.submit()
+    orders = get_orders_history.submit()
+    dividends = get_dividends.submit()
+    ex_rates = get_exchange_rates.submit()
+    tradable_stocks = get_tradable_stocks.submit()
+
     load_to_db(positions, schema = "t212_raw", table_name =  "raw_open_positions")
-
-    orders = get_orders_history()
     load_to_db(orders, schema =  "t212_raw", table_name = "raw_orders_history")
-
-    dividends = get_dividends()
     load_to_db(dividends, schema = "t212_raw", table_name = "raw_dividends")
-
-    ex_rates = get_exchange_rates()
     load_to_db(ex_rates, schema = "t212_raw", table_name = "raw_exchange_rates")
-
-    tradable_stocks = get_tradable_stocks()
     load_to_db(tradable_stocks, schema = "t212_raw", table_name = "raw_tradable_stocks")
     # --- Transformation ---
     DbtCoreOperation(
