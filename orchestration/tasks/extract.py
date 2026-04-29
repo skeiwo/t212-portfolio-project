@@ -174,7 +174,8 @@ def get_tradable_stocks() -> list[dict]:
         rows.append({
             "extract_timestamp": extract_timestamp,
             "isin": stock.get("isin", {}),
-            "created_at": stock.get("addedOn", {})
+            "created_at": stock.get("addedOn", {}),
+            "payload": json.dumps(stock)
         })
     
     logger.info("Extracted %d tradable_stocks", len(rows))
