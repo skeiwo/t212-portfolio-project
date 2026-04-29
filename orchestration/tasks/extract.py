@@ -98,17 +98,6 @@ def get_exchange_rates() -> list[dict]:
     logger.info("Starting exchange rates extract")
 
     url = "https://api.frankfurter.app/latest?from=EUR&to=CZK,USD,GBP,CHF"
-    response = requests.get(url)
-    response.raise_for_status()
-
-    data = response.json()
-    rows = []
-    extract_timestamp = datetime.now(timezone.utc).isoformat()
-
-    logger = _get_logger()
-    logger.info("Starting exchange rates extract")
-
-    url = "https://api.frankfurter.app/latest?from=EUR&to=CZK,USD,GBP,CHF"
     response = requests.get(url, timeout=30)
     response.raise_for_status()
 
@@ -165,4 +154,28 @@ def get_dividends():
             url = None
     
     logger.info("Extracted %d dividends", len(rows))
+    return rows
+
+
+@task
+def get_tradable_stocks() -> list[dict]:
+    rows = []
+    extract_timestamp = datetime.now(timezone.utc).isoformat()
+    
+    logger = _get_logger()
+    logger.info("Starting tradable stock extract")
+
+    url = "https://live.trading212.com/api/v0/equity/metadata/instruments"
+    response = requests.get(url, headers=HEADERS)
+    response.raise_for_status()
+
+    data = response.json()
+    for stock in data:
+        rows.append({
+            "extract_timestamp": extract_timestamp,
+            "isin": stock.get("isin", {}),
+            "created_at": stock.get("addedOn", {})
+        })
+    
+    logger.info("Extracted %d tradable_stocks", len(rows))
     return rows
