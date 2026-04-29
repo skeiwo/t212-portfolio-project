@@ -8,6 +8,7 @@ sources:
       - name: raw_orders_history
       - name: raw_open_positions
       - name: raw_exchange_rates
+      - name: raw_dividends
 
 models:
   - name: stg_orders_history
