@@ -5,6 +5,7 @@ sources:
     database: t212-project
     schema: t212_raw
     tables:
+      - name: raw_stock_splits
       - name: raw_orders_history
       - name: raw_open_positions
       - name: raw_exchange_rates

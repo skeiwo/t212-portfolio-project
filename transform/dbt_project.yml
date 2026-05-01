@@ -32,18 +32,14 @@ clean-targets:         # directories to be removed by `dbt clean`
 
 seeds:
   # t212:                   # your project name
-  +schema: seeds          # all seeds load into "seeds" schema
+  +schema: raw          # all seeds load into "stg" schema
 
 models:
   t212:
     stg:
-      main:
-        +schema: stg
-        +materialized: view
-      seeds:
-        +schema: stg
-        +materialized: view
+      +schema: stg
+      +materialized: view
 
-    int:
-      +schema: int
-      +materialized: table
+    # int:
+    #   +schema: int
+    #   +materialized: table

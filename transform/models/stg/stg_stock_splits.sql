@@ -1,7 +1,7 @@
 {{ config(materialized='view') }}
 
 with source as (
-    select * from {{ source('t212_seeds', 'raw_stock_splits') }}
+    select * from {{ source('t212_raw', 'raw_stock_splits') }}
 )
 
 ,final as (
