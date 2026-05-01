@@ -19,6 +19,8 @@ select
     cast(json_value(payload, '$.order.value') as float64) order_value,
     cast(json_value(payload, '$.order.filledValue') as float64) filled_value,
     cast(json_value(payload, '$.order.extendedHours') as bool) extended_hours,
+    cast(json_value(payload, '$.order.quantity') as float64) order_quantity,
+    cast(json_value(payload, '$.order.filledQuantity') as float64) order_filled_quantity,
 
     nullif(json_value(payload, '$.order.instrument.isin'), '') isin,
     nullif(json_value(payload, '$.order.instrument.currency'), '') instrument_currency,
@@ -31,8 +33,8 @@ select
 
     nullif(json_value(payload, '$.fill.walletImpact.currency'), '') wallet_currency,
     cast(json_value(payload, '$.fill.walletImpact.netValue') as float64) net_value,
-    cast(json_value(payload, '$.fill.walletImpact.fxRate') as float64) fx_rate,
-    cast(json_value(payload, '$.fill.walletImpact.taxes') as float64) taxes
+    cast(json_value(payload, '$.fill.walletImpact.taxes[0].quantity') as float64) currency_conversion_fee,
+    cast(json_value(payload, '$.fill.walletImpact.fxRate') as float64) fx_rate
 from source
 )
 
