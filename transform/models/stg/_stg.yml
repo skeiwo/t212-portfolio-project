@@ -19,12 +19,55 @@ models:
       - name: order_id
         tests:
           - not_null
+      - name: isin
+        tests:
+          - not_null
 
   - name: stg_open_positions
+    columns:
+      - name: isin
+        tests:
+          - not_null
+          - unique
+      - name: extract_timestamp
+        tests:
+          - not_null
+
+  - name: stg_dividends
+    columns:
+      - name: reference
+        tests:
+          - not_null
+          - unique
+      - name: isin
+        tests:
+          - not_null
+      - name: paid_on
+        tests:
+          - not_null
+
+  - name: stg_exchange_rates
+    columns:
+      - name: surrogate_key
+        tests:
+          - not_null
+          - unique
+      - name: currency
+        tests:
+          - not_null
+
+  - name: stg_stock_splits
+    columns:
+      - name: surrogate_key
+        tests:
+          - not_null
+          - unique
+
+  - name: stg_historial_prices
     columns:
       - name: ticker
         tests:
           - not_null
-      - name: extract_timestamp
+      - name: record_date
         tests:
           - not_null
