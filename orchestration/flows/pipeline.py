@@ -1,37 +1,34 @@
+from prefect import flow
+from prefect_dbt import PrefectDbtRunner, PrefectDbtSettings
+
 from orchestration.tasks.extract import get_open_positions, get_orders_history, get_exchange_rates, get_dividends, get_tradable_stocks, get_historical_prices
 from orchestration.tasks.load import load_to_db
 
-from prefect import flow
-from prefect_dbt.cli import DbtCoreOperation
 
 @flow(name="etl-pipeline")
 def etl_pipeline_flow():
-    # --- Ingestion ---
-    positions = get_open_positions.submit()
-    orders = get_orders_history.submit()
-    dividends = get_dividends.submit()
-    ex_rates = get_exchange_rates.submit()
-    tradable_stocks = get_tradable_stocks.submit()
-    historical_prices = get_historical_prices.submit()
+    sources = [
+        (get_open_positions, "raw_open_positions"),
+        (get_orders_history, "raw_orders_history"),
+        (get_dividends, "raw_dividends"),
+        (get_exchange_rates, "raw_exchange_rates"),
+        (get_tradable_stocks, "raw_tradable_stocks"),
+        (get_historical_prices, "raw_historical_prices"),
+    ]
 
-    load_to_db(positions, schema = "t212_raw", table_name =  "raw_open_positions")
-    load_to_db(orders, schema =  "t212_raw", table_name = "raw_orders_history")
-    load_to_db(dividends, schema = "t212_raw", table_name = "raw_dividends")
-    load_to_db(ex_rates, schema = "t212_raw", table_name = "raw_exchange_rates")
-    load_to_db(tradable_stocks, schema = "t212_raw", table_name = "raw_tradable_stocks")
-    load_to_db(historical_prices, schema = "t212_raw", table_name = "raw_historical_prices")
-    # --- Transformation ---
-    DbtCoreOperation(
-        commands=[
-            "dbt seed",
-            "dbt run --select stg",
-            "dbt test --select stg",
-            "dbt run --select int",
-            "dbt test --select int",
-        ],
-        project_dir="transform/",
-        profiles_dir="transform/"
-    ).run()
+    load_futures = []
+    for extract_task, table_name in sources:
+        rows = extract_task.submit()
+        load_future = load_to_db.submit(rows, schema="t212_raw", table_name=table_name)
+        load_futures.append(load_future)
+
+    for f in load_futures:
+        f.wait()
+
+
+    settings = PrefectDbtSettings(project_dir="transform/", profiles_dir="transform/")
+    runner = PrefectDbtRunner(settings=settings)
+    runner.invoke(["build", "--select", "staging", "intermediate", "marts"])
 
 
 if __name__ == "__main__":
