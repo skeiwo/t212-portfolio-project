@@ -11,6 +11,7 @@ sources:
       - name: raw_exchange_rates
       - name: raw_dividends
       - name: raw_tradable_stocks
+      - name: raw_historical_prices
 
 models:
   - name: stg_orders_history
