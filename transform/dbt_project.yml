@@ -42,6 +42,9 @@ models:
     int:
       +schema: int
       +materialized: table
+    marts:
+      +schema: marts
+      +materialized: table
 
     # int:
     #   +schema: int
