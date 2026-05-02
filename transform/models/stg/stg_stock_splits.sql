@@ -6,8 +6,8 @@ with source as (
 
 ,final as (
 select
-  {{ dbt_utils.generate_surrogate_key(['ticker', 'date']) }} as surrogate_key,
-  ticker,
+  {{ dbt_utils.generate_surrogate_key(['isin', 'date']) }} as surrogate_key,
+  isin,
   date,
   ratio_old,
   ratio_new
