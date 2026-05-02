@@ -31,7 +31,7 @@ group by order_id, isin, side, instrument_currency, currency
 ,orders_with_split_factor as (
 select
 	o.order_id,
-	coalesce(sum(ratio_old / ratio_new), 1.0) as split_adjustment_factor
+	coalesce(exp(sum(ln(s.ratio_old / s.ratio_new))), 1.0) as split_adjustment_factor
 from dedup_orders o
 left join {{ ref('stg_stock_splits') }} s
 	on s.isin = o.isin
@@ -50,7 +50,7 @@ select
 	o.net_value,
 	o.currency,
 	o.fx_rate,
-	o.currency_conversion_fee as fx_fee,
+	o.currency_conversion_fee,
 	
 	adj.split_adjustment_factor,
     o.filled_quantity * adj.split_adjustment_factor as filled_quantity_split_adjusted,
