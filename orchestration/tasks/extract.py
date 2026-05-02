@@ -3,9 +3,10 @@ import json
 import os
 import requests
 import time
+import yfinance as yf
 
 from orchestration.utils import _get_logger
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 from dotenv import load_dotenv
 from prefect import task
 
@@ -18,6 +19,10 @@ T212_CREDENTIALS = f"{T212_API_KEY}:{T212_API_SECRET}"
 ENCODED_CREDENTIALS = base64.b64encode(T212_CREDENTIALS.encode("utf-8")).decode("utf-8")
 HEADERS = {"Authorization": f"Basic {ENCODED_CREDENTIALS}"}
 BASE_URL = os.getenv("T212_BASE_URL")
+
+# HISTORICAL DATA
+TICKERS = ["NVDA", "META", "ROKU", "AMZN"]
+LOOKBACK_DAYS = 150
 
 
 @task
@@ -179,4 +184,44 @@ def get_tradable_stocks() -> list[dict]:
         })
     
     logger.info("Extracted %d tradable_stocks", len(rows))
+    return rows
+
+
+@task(retries=2, retry_delay_seconds=30)
+def get_historical_prices() -> list[dict]:
+    logger = _get_logger()
+    extract_timestamp = datetime.now(timezone.utc).isoformat()
+    start_date = (datetime.now(timezone.utc) - timedelta(days=LOOKBACK_DAYS)).date()
+    rows = []
+
+    logger.info("Starting historical prices extract for %d tickers from %s", len(TICKERS), start_date)
+
+    for ticker in TICKERS:
+        history = yf.Ticker(ticker).history(start=start_date, auto_adjust=False)
+
+        if history.empty:
+            logger.warning("No price data returned for %s", ticker)
+            continue
+        
+        data = history.iterrows()
+        for ts, row in data:
+            row_date = ts.date()
+            rows.append({
+                "extract_timestamp": extract_timestamp,
+                "record_id": f"{ticker}_{row_date.isoformat()}",
+                "record_date": row_date.isoformat(),
+                "ticker": ticker,
+                "payload": json.dumps({
+                    "open": row["Open"],
+                    "high": row["High"],
+                    "low": row["Low"],
+                    "close": row["Close"],
+                    "adj_close": row["Adj Close"],
+                    "volume": int(row["Volume"]),
+                }),
+            })
+
+        time.sleep(1)
+
+    logger.info("Extract complete: %d rows fetched", len(rows))
     return rows
