@@ -8,7 +8,7 @@ with source as (
 select
   {{ dbt_utils.generate_surrogate_key(['isin', 'date']) }} as surrogate_key,
   isin,
-  date,
+  CAST(date AS DATE) date,
   ratio_old,
   ratio_new
 from source
