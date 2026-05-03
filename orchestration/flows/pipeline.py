@@ -28,7 +28,7 @@ def etl_pipeline_flow():
 
     settings = PrefectDbtSettings(project_dir="transform/", profiles_dir="transform/")
     runner = PrefectDbtRunner(settings=settings)
-    runner.invoke(["build", "--select", "staging", "intermediate", "marts"])
+    runner.invoke(["build", "--select", "stg", "int", "marts"])
 
 
 if __name__ == "__main__":
