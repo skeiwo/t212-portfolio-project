@@ -1,0 +1,25 @@
+venv/
+.env
+.git/
+.DS_Store
+__pycache__/
+*.pyc
+
+# dbt runtime artifacts (installed/generated at build/run time)
+transform/dbt_packages/
+transform/target/
+transform/logs/
+transform/.user.yml
+
+# local profiles.yml — replaced by docker/profiles.yml in the image
+transform/profiles.yml
+
+# credentials (mounted as volume at runtime)
+*.json
+t212-project-kilianmaly.json
+gcp_credentials.json
+
+# notebooks and scratch files
+temp*
+*.ipynb
+*.sql

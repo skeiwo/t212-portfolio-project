@@ -1,0 +1,10 @@
+t212:
+  outputs:
+    dev:
+      type: bigquery
+      method: service-account
+      project: "{{ env_var('GCP_PROJECT') }}"
+      schema: t212
+      keyfile: /app/credentials/gcp_credentials.json
+      threads: 4
+  target: dev
