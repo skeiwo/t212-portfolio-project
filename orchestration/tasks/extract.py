@@ -66,7 +66,7 @@ def get_orders_history() -> list[dict]:
         response = requests.get(url, headers=HEADERS, params=params)
 
         if response.status_code == 429:
-            time_to_wait = int(response.headers.get("retry-after"))
+            time_to_wait = int(response.headers.get("retry-after", 60))
             logger.warning(f"Rate limited, waiting {time_to_wait} seconds")
             time.sleep(time_to_wait)
             continue
@@ -132,18 +132,17 @@ def get_dividends():
         response = requests.get(url, headers=HEADERS, timeout=30, params=params)
         
         if response.status_code == 429:
-            time_to_wait = int(response.headers.get("retry-after"))
+            time_to_wait = int(response.headers.get("retry-after", 60))
             logger.warning(f"Rate limited, waiting {time_to_wait} seconds")
             time.sleep(time_to_wait)
             continue
 
         response.raise_for_status()
         data = response.json()
-    
 
         for item in data.get("items", []):
-            reference_id = item.get("reference", {})
-            created_at = item.get("paidOn", {})
+            reference_id = item.get("reference")
+            created_at = item.get("paidOn")
             rows.append({
                 "extract_timestamp": extract_timestamp,
                 "record_id": reference_id,
@@ -170,8 +169,8 @@ def get_tradable_stocks() -> list[dict]:
     logger = _get_logger()
     logger.info("Starting tradable stock extract")
 
-    url = "https://live.trading212.com/api/v0/equity/metadata/instruments"
-    response = requests.get(url, headers=HEADERS)
+    url = f"{BASE_URL}/api/v0/equity/metadata/instruments"
+    response = requests.get(url, headers=HEADERS, timeout=30)
     response.raise_for_status()
 
     data = response.json()
