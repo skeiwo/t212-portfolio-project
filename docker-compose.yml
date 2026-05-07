@@ -28,7 +28,7 @@ services:
       - PREFECT_API_URL=http://prefect-server:4200/api
     env_file: .env
     volumes:
-      - ./gcp_credentials.json:/app/credentials/gcp_credentials.json:ro
+      - ./gcp_credentials.json:/app/gcp_credentials.json:ro
     restart: unless-stopped
     logging:
       driver: json-file
