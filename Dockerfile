@@ -21,6 +21,8 @@ COPY docker/profiles.yml transform/profiles.yml
 
 RUN cd transform && dbt deps
 
+RUN touch /app/gcp_credentials.json
+
 COPY orchestration/ orchestration/
 COPY serve.py .
 
