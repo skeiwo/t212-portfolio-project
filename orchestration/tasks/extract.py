@@ -63,7 +63,7 @@ def get_orders_history() -> list[dict]:
     params = {"limit": 50}
 
     while url:
-        response = requests.get(url, headers=HEADERS, params=params)
+        response = requests.get(url, headers=HEADERS, params=params, timeout=30)
 
         if response.status_code == 429:
             time_to_wait = int(response.headers.get("retry-after", 60))
@@ -118,7 +118,7 @@ def get_exchange_rates() -> list[dict]:
     return rows
 
 @task
-def get_dividends():
+def get_dividends() -> list[dict]:
     rows = []
     extract_timestamp = datetime.now(timezone.utc).isoformat()
     
@@ -177,8 +177,8 @@ def get_tradable_stocks() -> list[dict]:
     for stock in data:
         rows.append({
             "extract_timestamp": extract_timestamp,
-            "isin": stock.get("isin", {}),
-            "created_at": stock.get("addedOn", {}),
+            "isin": stock.get("isin"),
+            "created_at": stock.get("addedOn"),
             "payload": json.dumps(stock)
         })
     
