@@ -8,13 +8,12 @@ import os
 
 load_dotenv()
 
-BIGQUERY_CREDENTIALS = service_account.Credentials.from_service_account_file(os.getenv("GCP_CREDENTIALS"))
-BIGQUERY_CLIENT = bigquery.Client(credentials = BIGQUERY_CREDENTIALS, project = os.getenv("GCP_PROJECT"))
-
 
 @task(retries=1, retry_delay_seconds=30)
 def load_to_db(rows: list[dict], schema: str, table_name: str) -> None:
-    
+    credentials = service_account.Credentials.from_service_account_file(os.getenv("GCP_CREDENTIALS"))
+    client = bigquery.Client(credentials=credentials, project=os.getenv("GCP_PROJECT"))
+
     logger = _get_logger()
     logger.info("Starting load_to_db ingestion")
 
@@ -22,11 +21,11 @@ def load_to_db(rows: list[dict], schema: str, table_name: str) -> None:
         logger.info("No rows to load, skipping")
         return
 
-    table_id = f"{os.getenv("GCP_PROJECT")}.{schema}.{table_name}"
+    table_id = f"{os.getenv('GCP_PROJECT')}.{schema}.{table_name}"
 
     job_config = bigquery.LoadJobConfig(write_disposition=bigquery.WriteDisposition.WRITE_TRUNCATE)
 
     logger.info("Loading %d rows to %s", len(rows), table_id)
-    job = BIGQUERY_CLIENT.load_table_from_json(rows, table_id, job_config=job_config)
-    job.result()  # wait for completion and raise on failure
+    job = client.load_table_from_json(rows, table_id, job_config=job_config)
+    job.result()
     logger.info("Load complete")
