@@ -14,10 +14,7 @@ services:
       retries: 12
       start_period: 30s
     logging:
-      driver: json-file
-      options:
-        max-size: "10m"
-        max-file: "3"
+      driver: none
 
   pipeline:
     build: .
@@ -31,10 +28,7 @@ services:
       - ./gcp_credentials.json:/app/gcp_credentials.json:ro
     restart: unless-stopped
     logging:
-      driver: json-file
-      options:
-        max-size: "10m"
-        max-file: "3"
+      driver: none
 
 volumes:
   prefect-db:
