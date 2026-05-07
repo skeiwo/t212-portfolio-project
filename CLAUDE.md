@@ -56,8 +56,8 @@ Requires a `.env` file with:
 - `tasks/extract.py` — 6 Prefect task functions for: open positions, orders history, dividends, exchange rates, tradable stocks, Yahoo historical prices
   - Each returns `list[dict]` with shape `{extract_timestamp, record_id, payload, ...}` (additional columns vary per source)
   - Trading 212 endpoints handle pagination via `nextPagePath` and 429 rate limits via `Retry-After` header
-  - Yahoo prices uses `yfinance` with `auto_adjust=False` and a 5-year lookback (`LOOKBACK_DAYS = 1825`); fetches only prices, no company info or corporate actions yet
-- `tasks/load.py` — single `load_to_db()` task; writes JSON rows to BigQuery via `load_table_from_json` with `WRITE_TRUNCATE` (configurable via `write_mode` parameter)
+  - Yahoo prices uses `yfinance` with `auto_adjust=False` and a 150-day lookback (`LOOKBACK_DAYS = 150`); `TICKERS = ["NVDA", "META", "ROKU", "AMZN"]` is hardcoded; fetches only prices, no company info or corporate actions yet
+- `tasks/load.py` — single `load_to_db()` task; writes JSON rows to BigQuery via `load_table_from_json` with hardcoded `WRITE_TRUNCATE`
 - `utils.py` — `_get_logger()` returns Prefect's `get_run_logger()` when inside a flow context, falls back to stdlib logger when called standalone
 
 ### Transformation (`transform/`)
@@ -103,15 +103,14 @@ Three-layer medallion architecture in BigQuery, with separate schemas per layer:
   - Filters `status = 'FILLED'` AND `fill_type != 'STOCK_SPLIT'` (T212 represents corporate actions as pseudo-orders; filter them, use the seed instead)
   - Aggregation-based dedup (`group by order_id`) rather than row_number — necessary because T212 splits some ETF orders into multiple fill events that should be combined back into a single logical order
   - Weighted average fill price: `sum(price * qty) / sum(qty)` (and same for fx_rate)
-  - Derives `filled_value_eur` from `coalesce(filled_value, abs(filled_quantity) * fill_price)` because T212 doesn't populate `filled_value` for sells (which are typically quantity-based)
   - Joins splits on `isin` (not ticker) — ISIN is more stable and globally unique
   - Uses `net_value` as the canonical EUR cash impact (always populated for fills)
 - `int_positions_current` — latest position snapshot per ticker via `row_number() OVER (PARTITION BY ticker ORDER BY extract_timestamp DESC)`. With current truncate-loading this is a no-op, but kept for forward-compatibility with append-only bronze
 - `int_dividends_dedup` — latest dividend record per `reference` UUID
 
 **`dim_instruments` filtering:**
-- Filtered to ISINs that appear in any fact table (orders ∪ positions ∪ dividends), not the full 15k+ tradable universe
-- Sourced from `union distinct` across the three intermediate models, then inner joined to deduped `stg_tradable_stocks`
+- Filtered to instruments whose ticker appears in `stg_orders_history` (not the full 15k+ tradable universe), via a `WHERE EXISTS` subquery against `distinct ticker from stg_orders_history`
+- Sourced from `stg_tradable_stocks`, filtered down to only tickers that appear in orders
 
 **Fact table conventions:**
 - All EUR-denominated columns suffixed with `_eur` (`net_value_eur`, `total_cost_eur`, `unrealized_pnl_eur`)
@@ -127,15 +126,23 @@ Three-layer medallion architecture in BigQuery, with separate schemas per layer:
 - **Seeds:** `transform/seeds/raw_stock_splits.csv` — manually maintained list of historical splits (small enough to be reasonable; splits are rare events)
 - **Sources YAML:** `models/stg/_stg.yml` declares `t212_raw` source group with all raw tables
 - **Tests:** `not_null` and `unique` on natural keys across staging models; `not_null` + `unique` + `relationships` to `dim_instruments` on facts. Future work: `accepted_values` tests on categorical columns (status, side, dividend_type, etc.)
-- **Packages:** `dbt_utils` used for `generate_surrogate_key()` in seed-driven models
+- **Packages:** declared in `transform/dependencies.yml`; `dbt_utils` used for `generate_surrogate_key()` in staging models (e.g. `stg_exchange_rates`)
 
 ### dbt + Prefect integration
 
 `pipeline.py` uses `PrefectDbtRunner` from `prefect_dbt` (the modern API; `prefect_dbt.cli.DbtCoreOperation` is deprecated). The runner is configured via `PrefectDbtSettings(project_dir="transform/", profiles_dir="transform/")` and called once per flow run with `dbt build --select stg int marts`. By default the runner raises on dbt failures, which propagates to a failed Prefect flow run.
 
+### Deployment (`Dockerfile` + `docker-compose.yml`)
+
+Two-service Docker Compose setup:
+- `prefect-server` — runs `prefect server start`, exposes port 4200, persists state to a named volume
+- `pipeline` — builds from `Dockerfile`, runs `serve.py` as entrypoint (long-running Prefect worker that registers and executes the daily cron schedule)
+
+The `pipeline` service mounts `gcp_credentials.json` from the host and reads `.env` for secrets. A container-specific `docker/profiles.yml` is copied in at build time to replace the gitignored local one.
+
 ## Open follow-ups
 
 - Expand staging-layer dbt tests with `accepted_values` for categorical columns
 - Final architecture decision on bronze ingestion strategy (currently truncate-and-replace for all tables; potential per-table mix of incremental + append-only + dedup-downstream)
-- Deploy to Raspberry Pi via Docker (Path B: containerized for portfolio polish, simple `docker run` from cron for execution)
+- `TICKERS` in `extract.py` is hardcoded — consider driving from `raw_open_positions` or a config file as the portfolio grows
 - README.md for the repo (currently absent — biggest portfolio-piece gap)
