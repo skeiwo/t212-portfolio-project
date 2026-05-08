@@ -5,6 +5,8 @@ import requests
 import time
 import yfinance as yf
 
+from google.cloud import bigquery
+from google.oauth2 import service_account
 from orchestration.utils import _get_logger
 from datetime import datetime, timezone, timedelta
 from dotenv import load_dotenv
@@ -20,9 +22,17 @@ ENCODED_CREDENTIALS = base64.b64encode(T212_CREDENTIALS.encode("utf-8")).decode(
 HEADERS = {"Authorization": f"Basic {ENCODED_CREDENTIALS}"}
 BASE_URL = os.getenv("T212_BASE_URL")
 
-# HISTORICAL DATA
-TICKERS = ["NVDA", "META", "ROKU", "AMZN"]
-LOOKBACK_DAYS = 150
+def _get_isins_from_bq() -> list[str]:
+    credentials = service_account.Credentials.from_service_account_file(os.getenv("GCP_CREDENTIALS"))
+    client = bigquery.Client(credentials=credentials, project=os.getenv("GCP_PROJECT"))
+    sql = "select isin from `t212_marts.dim_instruments`"
+    query_result = client.query(sql)
+    return [row[0] for row in query_result.result()]
+
+
+def _get_tickers_from_isins(isins: list[str]) -> list[tuple[str, str]]:
+    pairs = [(isin, yf.utils.get_ticker_by_isin(isin)) for isin in isins]
+    return [(isin, ticker) for isin, ticker in pairs if ticker]
 
 
 @task
@@ -161,25 +171,33 @@ def get_tradable_stocks() -> list[dict]:
 def get_historical_prices() -> list[dict]:
     logger = _get_logger()
     extract_timestamp = datetime.now(timezone.utc).isoformat()
-    start_date = (datetime.now(timezone.utc) - timedelta(days=LOOKBACK_DAYS)).date()
+    yesterday = (datetime.now(timezone.utc) - timedelta(days=1)).date()
+    today = datetime.now(timezone.utc).date()
     rows = []
 
-    logger.info("Starting historical prices extract for %d tickers from %s", len(TICKERS), start_date)
+    isins = _get_isins_from_bq()
+    instruments = _get_tickers_from_isins(isins)
 
-    for ticker in TICKERS:
-        history = yf.Ticker(ticker).history(start=start_date, auto_adjust=False)
+    logger.info("Starting historical prices extract for %d tickers for %s", len(instruments), yesterday)
+
+    for isin, ticker in instruments:
+        try:
+            history = yf.Ticker(ticker).history(start=yesterday, end=today, auto_adjust=False)
+        except Exception as e:
+            logger.warning("Failed to fetch prices for %s (%s): %s", ticker, isin, e)
+            continue
 
         if history.empty:
-            logger.warning("No price data returned for %s", ticker)
+            logger.warning("No price data returned for %s (%s), skipping", ticker, isin)
             continue
-        
-        data = history.iterrows()
-        for ts, row in data:
+
+        for ts, row in history.iterrows():
             row_date = ts.date()
             rows.append({
                 "extract_timestamp": extract_timestamp,
                 "record_id": f"{ticker}_{row_date.isoformat()}",
                 "record_date": row_date.isoformat(),
+                "isin": isin,
                 "ticker": ticker,
                 "payload": json.dumps({
                     "open": row["Open"],
