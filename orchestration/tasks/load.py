@@ -23,7 +23,7 @@ def load_to_db(rows: list[dict], schema: str, table_name: str, write_disposition
 
     table_id = f"{os.getenv('GCP_PROJECT')}.{schema}.{table_name}"
 
-    disposition = bigquery.WriteDisposition[write_disposition]
+    disposition = getattr(bigquery.WriteDisposition, write_disposition)
     job_config = bigquery.LoadJobConfig(write_disposition=disposition)
 
     logger.info("Loading %d rows to %s with %s", len(rows), table_id, write_disposition)
