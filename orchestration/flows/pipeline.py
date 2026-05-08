@@ -13,7 +13,7 @@ def etl_pipeline_flow():
         (get_dividends,        "raw_dividends",        "WRITE_APPEND"),
         (get_exchange_rates,   "raw_exchange_rates",   "WRITE_TRUNCATE"),
         (get_tradable_stocks,  "raw_tradable_stocks",  "WRITE_TRUNCATE"),
-        (get_historical_prices,"raw_historical_prices","WRITE_TRUNCATE"),
+        (get_historical_prices,"raw_historical_prices","WRITE_APPEND"),
     ]
 
     load_futures = []
