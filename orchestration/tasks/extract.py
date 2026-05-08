@@ -60,36 +60,21 @@ def get_orders_history() -> list[dict]:
     logger.info("Starting orders history extract")
     
     url = f"{BASE_URL}/api/v0/equity/history/orders"
-    params = {"limit": 50}
+    params = {"limit": 20}
 
-    while url:
-        response = requests.get(url, headers=HEADERS, params=params, timeout=30)
+    response = requests.get(url, headers=HEADERS, params=params, timeout=30)
+    response.raise_for_status()
+    data = response.json()
 
-        if response.status_code == 429:
-            time_to_wait = int(response.headers.get("retry-after", 60))
-            logger.warning(f"Rate limited, waiting {time_to_wait} seconds")
-            time.sleep(time_to_wait)
-            continue
-
-        response.raise_for_status()
-        data = response.json()
-
-        for item in data.get("items", []):
-            order_id = item.get("order", {}).get("id")
-            created_at = item.get("order", {}).get("createdAt")
-            rows.append({
-                "extract_timestamp": extract_timestamp,
-                "record_id": str(order_id) if order_id is not None else None,
-                "record_created_at": created_at,
-                "payload": json.dumps(item),
-            })
-
-        next_page = data.get("nextPagePath")
-        if next_page:
-            url = next_page if next_page.startswith("http") else f"{BASE_URL}{next_page}"
-            params = None
-        else:
-            url = None
+    for item in data.get("items", []):
+        order_id = item.get("order", {}).get("id")
+        created_at = item.get("order", {}).get("createdAt")
+        rows.append({
+            "extract_timestamp": extract_timestamp,
+            "record_id": str(order_id) if order_id is not None else None,
+            "record_created_at": created_at,
+            "payload": json.dumps(item),
+        })
 
     logger.info("Extracted %d orders", len(rows))
     return rows
@@ -126,38 +111,24 @@ def get_dividends() -> list[dict]:
     logger.info("Starting dividends history extract")
     
     url = f"{BASE_URL}/api/v0/equity/history/dividends"
-    params = {"limit": 50}
-    
-    while url:
-        response = requests.get(url, headers=HEADERS, timeout=30, params=params)
-        
-        if response.status_code == 429:
-            time_to_wait = int(response.headers.get("retry-after", 60))
-            logger.warning(f"Rate limited, waiting {time_to_wait} seconds")
-            time.sleep(time_to_wait)
-            continue
+    params = {"limit": 20}
 
-        response.raise_for_status()
-        data = response.json()
+    response = requests.get(url, headers=HEADERS, timeout=30, params=params)
+    response.raise_for_status()
+    data = response.json()
 
-        for item in data.get("items", []):
-            reference_id = item.get("reference")
-            created_at = item.get("paidOn")
-            rows.append({
-                "extract_timestamp": extract_timestamp,
-                "record_id": reference_id,
-                "record_created_at": created_at,
-                "payload": json.dumps(item),
-            })
-
-        next_page = data.get("nextPagePath")
-        if next_page:
-            url = next_page if next_page.startswith("http") else f"{BASE_URL}{next_page}"
-            params = None
-        else:
-            url = None
+    for item in data.get("items", []):
+        reference_id = item.get("reference")
+        created_at = item.get("paidOn")
+        rows.append({
+            "extract_timestamp": extract_timestamp,
+            "record_id": reference_id,
+            "record_created_at": created_at,
+            "payload": json.dumps(item),
+        })
     
     logger.info("Extracted %d dividends", len(rows))
+
     return rows
 
 

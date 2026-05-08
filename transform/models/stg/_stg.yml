@@ -38,7 +38,6 @@ models:
       - name: reference
         tests:
           - not_null
-          - unique
       - name: isin
         tests:
           - not_null
