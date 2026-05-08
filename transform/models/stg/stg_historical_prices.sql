@@ -7,6 +7,8 @@ with source as (
 flattened as (
     select
         extract_timestamp,
+        record_id,
+        isin,
         ticker,
         record_date,
 
