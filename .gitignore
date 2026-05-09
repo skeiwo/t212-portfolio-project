@@ -15,3 +15,5 @@ transform/dbt_packages
 
 *.json
 .claude*
+
+.idea*
