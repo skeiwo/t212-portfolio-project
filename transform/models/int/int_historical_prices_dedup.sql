@@ -19,8 +19,7 @@ where extract_rank = 1
 select
 	record_id,
 	isin,
-	ticker,
-	record_date,
+	date,
 	open,
 	high,
 	low,

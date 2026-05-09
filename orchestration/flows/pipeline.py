@@ -1,7 +1,7 @@
 from prefect import flow
 from prefect_dbt import PrefectDbtRunner, PrefectDbtSettings
 
-from orchestration.tasks.extract import get_open_positions, get_orders_history, get_exchange_rates, get_dividends, get_tradable_stocks, get_historical_prices
+from orchestration.tasks.extract import get_open_positions, get_orders_history, get_dividends, get_tradable_stocks, get_historical_prices
 from orchestration.tasks.load import load_to_db
 
 
@@ -11,7 +11,6 @@ def etl_pipeline_flow():
         (get_open_positions,   "raw_open_positions",   "WRITE_TRUNCATE"),
         (get_orders_history,   "raw_orders_history",   "WRITE_APPEND"),
         (get_dividends,        "raw_dividends",        "WRITE_APPEND"),
-        (get_exchange_rates,   "raw_exchange_rates",   "WRITE_TRUNCATE"),
         (get_tradable_stocks,  "raw_tradable_stocks",  "WRITE_TRUNCATE"),
         (get_historical_prices,"raw_historical_prices","WRITE_APPEND"),
     ]
