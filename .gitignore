@@ -2,8 +2,7 @@
 
 venv/
 .env
-.DS*
-
+.*
 __pycache__/
 temp*
 
@@ -14,6 +13,3 @@ transform/target*
 transform/dbt_packages
 
 *.json
-.claude*
-
-.idea*
