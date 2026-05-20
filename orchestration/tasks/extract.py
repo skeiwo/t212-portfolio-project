@@ -90,29 +90,6 @@ def get_orders_history() -> list[dict]:
     return rows
 
 @task
-def get_exchange_rates() -> list[dict]:
-    rows = []
-    extract_timestamp = datetime.now(timezone.utc).isoformat()
-
-    logger = _get_logger()
-    logger.info("Starting exchange rates extract")
-
-    url = "https://api.frankfurter.app/latest?from=EUR&to=CZK,USD,GBP,CHF"
-    response = requests.get(url, timeout=30)
-    response.raise_for_status()
-
-    data = response.json()
-    rows.append({
-        "extract_timestamp": extract_timestamp,
-        "base": data.get("base"),
-        "record_id": data.get("date"),
-        "payload": json.dumps(data.get("rates")),
-    })
-
-    logger.info("Extracted %d exchange_rates", len(rows))
-    return rows
-
-@task
 def get_dividends() -> list[dict]:
     rows = []
     extract_timestamp = datetime.now(timezone.utc).isoformat()

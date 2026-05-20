@@ -10,7 +10,7 @@ flattened as (
         record_id,
         isin,
         ticker,
-        record_date,
+        record_date date,
 
         cast(json_value(payload, '$.open') as float64) open,
         cast(json_value(payload, '$.high') as float64) high,
