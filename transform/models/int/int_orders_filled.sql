@@ -5,6 +5,7 @@ select * from {{ ref('stg_orders_history') }}
 where true
     and status = 'FILLED'
     and fill_type != 'STOCK_SPLIT'
+QUALIFY RANK() OVER (PARTITION BY order_id ORDER BY extract_timestamp DESC) = 1
 )
 
 ,dedup_orders as (
