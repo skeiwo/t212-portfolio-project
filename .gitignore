@@ -13,3 +13,6 @@ transform/target*
 transform/dbt_packages
 
 *.json
+
+
+README.md
